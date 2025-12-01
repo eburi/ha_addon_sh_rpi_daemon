@@ -10,7 +10,7 @@ arch:
   - armv7
   - aarch64
 
-initi: false
+init: false
 startup: services
 hassio_api: true
 hassio_role: manager
