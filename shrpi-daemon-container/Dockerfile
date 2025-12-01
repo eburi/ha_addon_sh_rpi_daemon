@@ -15,7 +15,7 @@ USER root
 WORKDIR /app
 
 # Install Python dependencies
-RUN apk add --no-cache python3 py3-pip iproute2 git
+RUN apk add --no-cache python3 py3-pip iproute2 sudo 
 RUN pip3 install --break-system-packages shrpid
 
 # Make sure that's in there
