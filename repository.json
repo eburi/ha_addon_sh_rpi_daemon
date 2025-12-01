@@ -1,6 +1,5 @@
 {
   "name": "HA Sailor HAT AddOn",
-  "udev": true,
-  "url": "https://github.com/alexbelgium/hassio-addons",
-  "maintainer": "alexbelgium"
+  "url": "https://github.com/eburi/ha_addon_sh_rpi_daemon",
+  "maintainer": "eburi"
 }
