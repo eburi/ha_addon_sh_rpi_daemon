@@ -1,0 +1,6 @@
+{
+  "name": "HA Sailor HAT AddOn",
+  "udev": true,
+  "url": "https://github.com/alexbelgium/hassio-addons",
+  "maintainer": "alexbelgium"
+}

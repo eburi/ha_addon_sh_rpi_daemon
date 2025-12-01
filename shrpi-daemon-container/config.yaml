@@ -3,17 +3,18 @@ slug: sh_rpi_daemon
 version: "0.1.0"
 description: >
   This add-on adds the SH-Rpi Daemon that monitors the Sailor Hat for Raspberry Pi and shutsdown Home Assistant when the power fails.
-
+url: https://github.com/eburi/ha_addon_sh_rpi_daemon
 
 arch:
   - amd64
   - armv7
   - aarch64
 
-startup: services
-
-homeassistant_api: true
+startup: system
+udev: true
 hassio_api: true
+hassio_role: manager
+homeassistant_api: true
 
 devices:
   - /dev/i2c-1
