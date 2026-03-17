@@ -4,7 +4,6 @@
 
 ARG BUILD_FROM
 ARG BUILD_VERSION
-ARG BUILD_FROM
 FROM ${BUILD_FROM}
 
 ##################
@@ -14,8 +13,8 @@ FROM ${BUILD_FROM}
 USER root
 WORKDIR /app
 
-# Install Python dependencies
-RUN apk add --no-cache python3 py3-pip iproute2 sudo 
+# Install Python dependencies and dbus (for direct systemd PowerOff on power loss)
+RUN apk add --no-cache python3 py3-pip iproute2 sudo dbus
 RUN pip3 install --break-system-packages shrpid
 
 # Make sure that's in there
