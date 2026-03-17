@@ -48,11 +48,33 @@ The add-on requires no configuration — it automatically monitors the Sailor Ha
 5. systemd sends SIGTERM to all processes simultaneously and unmounts filesystems
 6. Power is cut — filesystem remains clean for next boot
 
+## Shutdown Log
+
+Every power-loss shutdown is recorded to `/data/shutdown.log` inside the add-on container. This file persists across reboots. On the next startup, the add-on prints the previous shutdown log to the add-on logs and archives it to `/data/shutdown.log.prev`.
+
+Example output in the add-on logs after a power-loss event:
+
+```
+========================================
+PREVIOUS SHUTDOWN LOG FOUND:
+========================================
+  2026-03-16 18:56:58 === POWER LOSS DETECTED — initiating emergency shutdown ===
+  2026-03-16 18:56:58 Uptime: 13119.00 35765.42
+  2026-03-16 18:56:58 Flushing filesystem buffers (sync)...
+  2026-03-16 18:56:58 Sync completed
+  2026-03-16 18:56:58 Sending PowerOff via D-Bus to systemd...
+  2026-03-16 18:56:58 PowerOff command sent. Waiting for systemd to shut down...
+========================================
+```
+
+If the log is truncated (e.g., missing "Sync completed" or "PowerOff command sent"), it indicates the supercapacitors drained before that step completed.
+
 ## Troubleshooting
 
 - **ext4 journal replay on boot**: Normal and expected after any unclean shutdown
 - **No shutdown on power loss**: Check I2C device access (`/dev/i2c-1`), verify `shrpid` is running in addon logs
 - **Shutdown too slow**: Reduce `blackout_time_limit` in the SH-RPi daemon (see hardware docs)
+- **Shutdown log truncated**: The supercap runtime was insufficient — check hardware connections and capacitor health
 
 ## Links
 

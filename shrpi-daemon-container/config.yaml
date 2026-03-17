@@ -1,6 +1,6 @@
 name: SH Rpi Daemon for Sailor HAT
 slug: sh_rpi_daemon
-version: "0.5.0"
+version: "1.0.0"
 description: >
   Safely shuts down Home Assistant when power is lost — fast enough to complete before supercapacitors drain. Uses direct dbus PowerOff for reliable filesystem protection.
 url: https://github.com/eburi/ha_addon_sh_rpi_daemon
