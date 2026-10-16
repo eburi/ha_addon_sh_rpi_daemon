@@ -15,13 +15,14 @@ WORKDIR /app
 
 # Install Python dependencies and dbus (for direct systemd PowerOff on power loss)
 RUN apk add --no-cache python3 py3-pip iproute2 sudo dbus
-RUN pip3 install --break-system-packages shrpid
+RUN pip3 install --break-system-packages shrpid 'paho-mqtt~=2.1'
 
 # Make sure that's in there
 RUN echo "i2c_bcm2708" >> /etc/modules
 
 COPY rootfs/custom-poweroff.sh /custom-poweroff.sh
 COPY rootfs/shrpid.conf /etc/shrpid.conf
+COPY rootfs/shrpi_sensors.py /shrpi_sensors.py
 
 RUN chmod +x /custom-poweroff.sh
 

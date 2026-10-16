@@ -33,11 +33,56 @@ Deploys to the default HA instance (192.168.46.222). See `./local_deploy.sh -h` 
 
 ## Configuration
 
-| Option | Description |
-|--------|-------------|
-| `blackout_time_limit` | Time (seconds) to wait before confirming power is truly lost. Set in the SH-RPi daemon config, not here. Lower = faster shutdown but more sensitive to glitches. Recommended: 0.5-1.0s |
+| Option | Default | Description |
+|--------|---------|-------------|
+| `blackout_time_limit` | `1.0` | Seconds of input undervoltage before shutdown is triggered. This is time spent *not* shutting down, taken out of the supercapacitor budget, so keep it short. `shrpid`'s own default is 3.0s, which is a large slice of the runtime a loaded Pi 5 actually gets. |
+| `blackout_voltage_limit` | `9.0` | Input volts below which power counts as lost. The SH-RPi accepts 9–32V in, so 9.0 is the bottom of the usable range. Raise it on a 12V system that sags under load if you want an earlier shutdown. |
+| `sensor_interval` | `10` | Seconds between telemetry publishes. `0` disables publishing. |
 
-The add-on requires no configuration — it automatically monitors the Sailor Hat via I2C and triggers shutdown on power loss.
+Lower `blackout_time_limit` means a faster shutdown but more sensitivity to a
+brief sag. On a 24V system the input would have to drop by two thirds to reach
+9V, so a short limit is safe; on 12V, measure before trusting it.
+
+## Telemetry
+
+The add-on publishes the HAT's state to Home Assistant over MQTT discovery,
+which requires an MQTT broker add-on (e.g. Mosquitto). Without one the add-on
+logs a warning and carries on doing its real job — the shutdown path does not
+depend on MQTT.
+
+| Entity | Unit |
+|--------|------|
+| `sensor.sailor_hat_sh_rpi_input_voltage` | V |
+| `sensor.sailor_hat_sh_rpi_supercapacitor_voltage` | V |
+| `sensor.sailor_hat_sh_rpi_input_current` | A |
+| `sensor.sailor_hat_sh_rpi_mcu_temperature` | °C |
+| `sensor.sailor_hat_sh_rpi_state` | — |
+| `binary_sensor.sailor_hat_sh_rpi_5v_output` | — |
+| `binary_sensor.sailor_hat_sh_rpi_watchdog` | — |
+
+The numeric entities carry `state_class: measurement`, so the recorder keeps
+long-term statistics. **This is the point of the feature:** supercapacitors
+degrade quietly, and a bank that no longer carries a shutdown still reads a
+healthy 8.8V while shore power is present, because that figure is the regulated
+bus the first-stage buck holds up. A months-long history of
+`supercapacitor_voltage` and `input_current` is what makes the decay visible
+before the day it matters.
+
+`sensor.sailor_hat_sh_rpi_state` reports the HAT's own state machine. The ones
+worth recognising:
+
+| State | Meaning |
+|-------|---------|
+| `POWER_ON_5V_ON` | normal running, input power present |
+| `POWER_OFF_5V_ON` | **input power gone, running on the supercapacitors** |
+| `ENTER_SHUTDOWN` / `SHUTDOWN` | the HAT has been told to cut power |
+| `WATCHDOG_REBOOT` | `shrpid` stopped petting the watchdog and the HAT power-cycled the Pi |
+
+Seeing `POWER_OFF_5V_ON` in the history after a power cut is the proof that the
+supercapacitors carried the Pi. Never seeing it means they did not.
+
+Entities go `unavailable` if the publisher, the broker connection or `shrpid`
+itself stops, rather than freezing at their last value.
 
 ## How It Works
 
@@ -73,8 +118,9 @@ If the log is truncated (e.g., missing "Sync completed" or "PowerOff command sen
 
 - **ext4 journal replay on boot**: Normal and expected after any unclean shutdown
 - **No shutdown on power loss**: Check I2C device access (`/dev/i2c-1`), verify `shrpid` is running in addon logs
-- **Shutdown too slow**: Reduce `blackout_time_limit` in the SH-RPi daemon (see hardware docs)
+- **Shutdown too slow**: Reduce `blackout_time_limit` in the add-on options
 - **Shutdown log truncated**: The supercap runtime was insufficient — check hardware connections and capacitor health
+- **No shutdown log at all after a power cut, and the journal just stops**: `shrpid` never reached its shutdown state, so the 5V rail went away in less than `blackout_time_limit`. That is a holdover failure, not a configuration one — a healthy bank carries a loaded Pi 5 for roughly 15-20s. Check `sensor.sailor_hat_sh_rpi_state` history for `POWER_OFF_5V_ON`: if it never appears, the supercapacitors are not carrying the load. A bank that is degraded or electrically disconnected still reports ~8.8V while input power is present
 
 ## Links
 
